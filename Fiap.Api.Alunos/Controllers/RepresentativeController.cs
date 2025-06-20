@@ -2,12 +2,14 @@
 using Fiap.Web.Alunos.Models;
 using Fiap.Web.Alunos.Services;
 using Fiap.Web.Alunos.ViewModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fiap.Api.Alunos.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class RepresentativeController : Controller
     {
         private readonly IRepresentativeService _representativeService;
@@ -20,6 +22,7 @@ namespace Fiap.Api.Alunos.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "operator,analyst,manager")]
         public ActionResult<IEnumerable<RepresentativeViewModel>> Get()
         {
             var list = _representativeService.GetAllRepresentatives();
@@ -36,6 +39,7 @@ namespace Fiap.Api.Alunos.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "operator,analyst,manager")]
         public ActionResult<RepresentativeViewModel> Get([FromRoute] int id)
         {
             var model = _representativeService.GetRepresentativeById(id);
@@ -52,6 +56,7 @@ namespace Fiap.Api.Alunos.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "analyst,manager")]
         public ActionResult Post([FromBody] RepresentativeViewModel viewModel)
         {
             var model = _mapper.Map<RepresentativeModel>(viewModel);
@@ -61,6 +66,7 @@ namespace Fiap.Api.Alunos.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "manager")]
         public ActionResult Delete([FromRoute] int id)
         {
             _representativeService.DeleteRepresentative(id);
@@ -68,6 +74,7 @@ namespace Fiap.Api.Alunos.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "manager")]
         public ActionResult Put(
             [FromRoute] int id,
             [FromBody] RepresentativeViewModel viewModel
