@@ -5,126 +5,120 @@ namespace Fiap.Web.Alunos.Data.Contexts
 {
     public class DatabaseContext : DbContext
     {
+        public virtual DbSet<RepresentativeModel> Representatives { get; set; }
+        public virtual DbSet<CustomerModel> Customers  { get; set; }
+        public virtual DbSet<ProductModel> Products { get; set; }
+        public virtual DbSet<StoreModel> Stores { get; set; }
+        public virtual DbSet<OrderModel> Orders { get; set; }
+        public virtual DbSet<SupplierModel> Suppliers { get; set; }
+        public virtual DbSet<OrderProductModel> OrderProducts { get; set; }
 
-        public virtual DbSet<RepresentanteModel> Representantes { get; set; }
-        public virtual DbSet<ClienteModel> Clientes { get; set; }
-        public virtual DbSet<ProdutoModel> Produtos { get; set; }
-        public virtual DbSet<LojaModel> Lojas { get; set; }
-        public virtual DbSet<PedidoModel> Pedidos { get; set; }
-        public virtual DbSet<FornecedorModel> Fornecedores { get; set; }
-        public virtual DbSet<PedidoProdutoModel> PedidoProdutos { get; set; }
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<RepresentativeModel>(entity =>
+    {
+        entity.ToTable("Representantes");
+        entity.HasKey(e => e.RepresentativeId);
+        entity.Property(e => e.RepresentativeId).HasColumnName("RepresentanteId");
+        entity.Property(e => e.RepresentativeName).HasColumnName("NomeRepresentante").IsRequired();
+        entity.Property(e => e.Cpf).HasColumnName("Cpf");
+        entity.HasIndex(e => e.Cpf).IsUnique();
+    });
 
+    modelBuilder.Entity<CustomerModel>(entity =>
+    {
+        entity.ToTable("Clientes");
+        entity.HasKey(e => e.CustomerId);
+        entity.Property(e => e.CustomerId).HasColumnName("ClienteId");
+        entity.Property(e => e.FirstName).HasColumnName("Nome").IsRequired();
+        entity.Property(e => e.Email).HasColumnName("Email").IsRequired();
+        entity.Property(e => e.BirthDate).HasColumnName("DataNascimento").HasColumnType("date");
+        entity.Property(e => e.Notes).HasMaxLength(500);
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<RepresentanteModel>(entity =>
-            {
-                entity.ToTable("Representantes");
-                entity.HasKey(e => e.RepresentanteId);
-                entity.Property(e => e.NomeRepresentante).IsRequired();
-                entity.HasIndex(e => e.Cpf).IsUnique(); 
-            });
+        entity.Property(e => e.RepresentativeId).HasColumnName("RepresentanteId");
 
-            modelBuilder.Entity<ClienteModel>(entity =>
-            {
-                // Define o nome da tabela para 'Clientes'
-                entity.ToTable("Clientes"); 
-                entity.HasKey(e => e.ClienteId); 
-                entity.Property(e => e.Nome).IsRequired(); 
-                entity.Property(e => e.Email).IsRequired();
+        entity.HasOne(e => e.Representative)
+              .WithMany()
+              .HasForeignKey(e => e.RepresentativeId)
+              .IsRequired();
+    });
 
-                // Especifica o tipo de dado para DataNascimento
-                entity.Property(e => e.DataNascimento).HasColumnType("date");
-                entity.Property(e => e.Observacao).HasMaxLength(500);
+    modelBuilder.Entity<ProductModel>(entity =>
+    {
+        entity.ToTable("Produtos");
+        entity.HasKey(p => p.ProductId);
+        entity.Property(p => p.ProductId).HasColumnName("ProdutoId");
+        entity.Property(p => p.Name).HasColumnName("Nome").IsRequired();
+        entity.Property(p => p.Description).HasColumnName("Descricao");
+        entity.Property(p => p.Price).HasColumnName("Preco").HasColumnType("NUMBER(18,2)");
 
-                // Configuração da relação com RepresentanteModel
-                // Define a relação de um para um com RepresentanteModel
-                entity.HasOne(e => e.Representante)
-                    // Indica que um Representante pode ter muitos Clientes
-                    .WithMany()
-                    // Define a chave estrangeira
-                    .HasForeignKey(e => e.RepresentanteId)
-                    // Torna a chave estrangeira obrigatória
-                    .IsRequired(); 
-            });
+        entity.Property(p => p.SupplierId).HasColumnName("FornecedorId");
 
+        entity.HasOne(p => p.Supplier)
+              .WithMany(f => f.Products)
+              .HasForeignKey(p => p.SupplierId);
+    });
 
-            // Configuração para ProdutoModel
-            modelBuilder.Entity<ProdutoModel>(entity =>
-            {
-                entity.ToTable("Produtos");
-                entity.HasKey(p => p.ProdutoId);
-                entity.Property(p => p.Nome).IsRequired();
-                entity.Property(p => p.Descricao);
-                entity.Property(p => p.Preco).HasColumnType("NUMBER(18,2)");
+    modelBuilder.Entity<StoreModel>(entity =>
+    {
+        entity.ToTable("Lojas");
+        entity.HasKey(l => l.StoreId);
+        entity.Property(l => l.StoreId).HasColumnName("LojaId");
+        entity.Property(l => l.Name).HasColumnName("Nome").IsRequired();
+        entity.Property(l => l.Address).HasColumnName("Endereco");
 
-                // Relacionamento com FornecedorModel
-                entity.HasOne(p => p.Fornecedor)
-                      .WithMany(f => f.Produtos)
-                      .HasForeignKey(p => p.FornecedorId);
-            });
+        entity.HasMany(l => l.Orders)
+              .WithOne(p => p.Store)
+              .HasForeignKey(p => p.StoreId);
+    });
 
-            // Configuração para LojaModel
-            modelBuilder.Entity<LojaModel>(entity =>
-            {
-                entity.ToTable("Lojas");
-                entity.HasKey(l => l.LojaId);
-                entity.Property(l => l.Nome).IsRequired();
-                entity.Property(l => l.Endereco);
+    modelBuilder.Entity<OrderModel>(entity =>
+    {
+        entity.ToTable("Pedidos");
+        entity.HasKey(p => p.OrderId);
+        entity.Property(p => p.OrderId).HasColumnName("PedidoId");
+        entity.Property(p => p.OrderDate).HasColumnName("DataPedido").HasColumnType("DATE");
 
-                // Relacionamento com PedidoModel
-                entity.HasMany(l => l.Pedidos)
-                      .WithOne(p => p.Loja)
-                      .HasForeignKey(p => p.LojaId);
-            });
+        entity.Property(p => p.CustomerId).HasColumnName("ClienteId");
+        entity.Property(p => p.StoreId).HasColumnName("LojaId");
 
-            // Configuração para PedidoModel
-            modelBuilder.Entity<PedidoModel>(entity =>
-            {
-                entity.ToTable("Pedidos");
-                entity.HasKey(p => p.PedidoId);
-                entity.Property(p => p.DataPedido).HasColumnType("DATE");
+        entity.HasOne(p => p.Customer)
+              .WithMany()
+              .HasForeignKey(p => p.CustomerId);
 
-                // Relacionamento com ClienteModel
-                entity.HasOne(p => p.Cliente)
-                      .WithMany()
-                      .HasForeignKey(p => p.ClienteId);
+        entity.HasMany(p => p.OrderProducts)
+              .WithOne(pp => pp.Order)
+              .HasForeignKey(pp => pp.OrderId);
+    });
 
-                // Configuração de muitos para muitos: PedidoModel e ProdutoModel
-                entity.HasMany(p => p.PedidoProdutos)
-                      .WithOne(pp => pp.Pedido)
-                      .HasForeignKey(pp => pp.PedidoId);
-            });
+    modelBuilder.Entity<SupplierModel>(entity =>
+    {
+        entity.ToTable("Fornecedores");
+        entity.HasKey(f => f.SupplierId);
+        entity.Property(f => f.SupplierId).HasColumnName("FornecedorId");
+        entity.Property(f => f.Name).HasColumnName("Nome").IsRequired();
+    });
 
-            // Configuração para FornecedorModel
-            modelBuilder.Entity<FornecedorModel>(entity =>
-            {
-                entity.ToTable("Fornecedores");
-                entity.HasKey(f => f.FornecedorId);
-                entity.Property(f => f.Nome).IsRequired();
-            });
+    modelBuilder.Entity<OrderProductModel>(entity =>
+    {
+        entity.ToTable("PedidoProdutos");
+        entity.HasKey(pp => new { pp.OrderId, pp.ProductId });
 
-            // Configuração para PedidoProdutoModel (relacionamento muitos-para-muitos)
-            modelBuilder.Entity<PedidoProdutoModel>(entity =>
-            {
-                entity.HasKey(pp => new { pp.PedidoId, pp.ProdutoId });
+        entity.Property(pp => pp.OrderId).HasColumnName("PedidoId");
+        entity.Property(pp => pp.ProductId).HasColumnName("ProdutoId");
 
-                entity.HasOne(pp => pp.Pedido)
-                      .WithMany(p => p.PedidoProdutos)
-                      .HasForeignKey(pp => pp.PedidoId);
+        entity.HasOne(pp => pp.Order)
+              .WithMany(p => p.OrderProducts)
+              .HasForeignKey(pp => pp.OrderId);
 
-                entity.HasOne(pp => pp.Produto)
-                      .WithMany(p => p.PedidoProdutos)
-                      .HasForeignKey(pp => pp.ProdutoId);
-            });
+        entity.HasOne(pp => pp.Product)
+              .WithMany(p => p.OrderProducts)
+              .HasForeignKey(pp => pp.ProductId);
+    });
+}
 
-        }
+        public DatabaseContext(DbContextOptions options) : base(options) { }
 
-        public DatabaseContext(DbContextOptions options) : base(options)
-        {
-        }
-        protected DatabaseContext()
-        {
-        }
+        protected DatabaseContext() { }
     }
 }
